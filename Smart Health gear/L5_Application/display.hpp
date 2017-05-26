@@ -1,10 +1,17 @@
-/*
- * display.hpp
- *
- *  Created on: May 16, 2017
- *      Author: Aniket Dali
- */
-
+/*****************************************************************************
+$Work file     : display.hpp $
+Description    : This file contains the class declaration for display and button task.
+Project(s)     : Smart Health Gear
+Compiler       : Cross ARM GCC
+OS			   : RTOS
+Original Author: $ Aniket Dali
+$Author        : $ Aniket Dali
+$Date          : $ 26 May 2017
+$Revision      : 1.0 $
+*****************************************************************************/
+/****************************************************************************/
+/*                       INCLUDE FILES                                      */
+/****************************************************************************/
 #ifndef L5_APPLICATION_DISPLAY_HPP_
 #define L5_APPLICATION_DISPLAY_HPP_
 
@@ -15,12 +22,11 @@
 #include "stdint.h"
 #include <stdio.h>
 
-
-/***************************************************** Defines section ***************************************************************/
+/****************************************************************************/
+/*                        MACRO Definitions                                 */
+/****************************************************************************/
 // Timer for 1ms timeout
 #define  Hundered_ms_timer    (3)
-
-
 // Standard Definitions
 #define SET 	         (1)
 #define RESET            (0)
@@ -30,7 +36,6 @@
 #define MINUTE			 (60)
 #define SEC		     	 (1000)
 #define THIRTY_SEC		 (300)
-
 // Event
 #define YEAR_EVENT       (4)
 #define MONTH_EVENT	     (3)
@@ -40,10 +45,8 @@
 #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
 #define _swap_int16_t(a, b) { int16_t t = a; a = b; b = t; }
 
-/***************************************************** ILI9340 GFX Library ************************************************************/
-
-
-/***************************************************** Standard ASCII 5x7 font ********************************************************/
+/************************** ILI9340 GFX Library ************************/
+/************************* Standard ASCII 5x7 font ********************/
 static const unsigned char font[]  =
 {
 	0x00, 0x00, 0x00, 0x00, 0x00,
@@ -304,7 +307,7 @@ static const unsigned char font[]  =
 	0x00, 0x00, 0x00, 0x00, 0x00  // #255 NBSP
 };
 
-/************************************************************* display command *******************************************************/
+/*********************** display command ********************************/
 
 #define ILI9340_TFTWIDTH  240
 #define ILI9340_TFTHEIGHT 320
@@ -385,7 +388,9 @@ static const unsigned char font[]  =
 // Display dimensions
 #define _width  240
 #define _height 320
-
+/****************************************************************************/
+/*                       Global variables                                   */
+/****************************************************************************/
 
 // RTC parameters
 static uint8_t minute;
@@ -409,8 +414,11 @@ extern QueueHandle_t step_data;
 // state machine
 typedef enum {clock_screen,sensor_screen,warning_screen} screens;
 
+/****************************************************************************/
+/*                       Class declarations                                 */
+/****************************************************************************/
 
-/*************************************************** Display Task **************************************************************/
+/********************************* Display Task ******************************/
 class display_Task : public scheduler_task
 {
 public:
@@ -479,6 +487,7 @@ private:
 
 };
 
+/********************************* Button Task ************************************/
 class button_Task : public scheduler_task
 {
 public:
@@ -489,3 +498,7 @@ public:
 
 
 #endif /* L5_APPLICATION_DISPLAY_HPP_ */
+/*===================================================================
+// $Log: $1.0 AVD:Added comments to increase the readability
+//
+//--------------------------------------------------------------------*/
