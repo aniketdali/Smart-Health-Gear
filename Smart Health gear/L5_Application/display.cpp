@@ -397,7 +397,7 @@ Notes       :  None
 void callback_parameters()
 {
 	// Signal the Sensor Screen button pressed event to start the de-bounce timer
-	// to verify the validy of the button pressed
+	// to verify the validity of the button pressed
 	xSemaphoreGive(senor_button);
 }
 /*----------------------------------------------------------------------------
@@ -481,22 +481,22 @@ bool display_Task::init(void)
 	  writedata(0x00);
 	  writedata(0x00);
 
-	  //Power control
+	  // Power control
 	  writecommand(ILI9340_PWCTR1);
-	  //VRH[5:0]
+	  // VRH[5:0]
 	  writedata(0x23);
 
-	  //Power control
+	  // Power control
 	  writecommand(ILI9340_PWCTR2);
-	  //SAP[2:0];BT[3:0]
+	  // SAP[2:0];BT[3:0]
 	  writedata(0x10);
 
-	  //VCM control
+	  // VCM control
 	  writecommand(ILI9340_VMCTR1);
 	  writedata(0x3e);
 	  writedata(0x28);
 
-	  //VCM control2
+	  // VCM control2
 	  writecommand(ILI9340_VMCTR2);
 	  writedata(0x86);
 
@@ -525,7 +525,7 @@ bool display_Task::init(void)
 	  writecommand(ILI9340_GAMMASET);
 	  writedata(0x01);
 
-	  //Set Gamma
+	  // Set Gamma
 	  writecommand(ILI9340_GMCTRP1);
 	  writedata(0x0F);
 	  writedata(0x31);
@@ -543,7 +543,7 @@ bool display_Task::init(void)
 	  writedata(0x09);
 	  writedata(0x00);
 
-	  //Set Gamma
+	  // Set Gamma
 	  writecommand(ILI9340_GMCTRN1);
 	  writedata(0x00);
 	  writedata(0x0E);
@@ -625,31 +625,64 @@ bool display_Task::init(void)
      return 1;
 }
 
-
-// Clear the minute parameters
+/*----------------------------------------------------------------------------
+Function    :  clearminute()
+Inputs      :  None
+Processing  :  This function clears minute field
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearminute(void)
 {
 	fillRect(130,70,70,47,ILI9340_BLACK);
 }
-// Clear the hour parameters
+/*----------------------------------------------------------------------------
+Function    :  clearhour()
+Inputs      :  None
+Processing  :  This function clears hours field
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearhour(void)
 {
 	fillRect(40,70,160,47,ILI9340_BLACK);
 }
-// Clear the day parameters
+/*----------------------------------------------------------------------------
+Function    :  clearday()
+Inputs      :  None
+Processing  :  This function clears days field
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearday(void)
 {
 	fillRect(85,130,40,25,ILI9340_BLACK);
 	clearhour();
 }
-// Clear the month parameters
+/*----------------------------------------------------------------------------
+Function    :  clearmonth()
+Inputs      :  None
+Processing  :  This function clears months field
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearmonth(void)
 {
 	fillRect(10,130,110,25,ILI9340_BLACK);
 	clearhour();
 }
-
-// Clear the sensor screen
+/*----------------------------------------------------------------------------
+Function    :  clearscrn1()
+Inputs      :  None
+Processing  :  This function clears sensor screen
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearScrn1(void)
 {
 	drawFastVLine(5,0,200,ILI9340_BLACK);
@@ -669,43 +702,86 @@ void display_Task::clearScrn1(void)
 	fillRect(148,20,235,190,ILI9340_BLACK);
 
 }
-
-
-// Clear the Clock screen
+/*----------------------------------------------------------------------------
+Function    :  clearscrn2()
+Inputs      :  None
+Processing  :  This function clears entire screen
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearScrn2(void)
 {
 	fillRect(25,70,200,85,ILI9340_BLACK);
 }
-
-
-// Clear the sensor values
+/*----------------------------------------------------------------------------
+Function    :  clearOX()
+Inputs      :  None
+Processing  :  This function clears Oxygen parameters
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearOX(void)
 {
 	fillRect(145,55,86,35,ILI9340_BLACK);
 }
-
+/*----------------------------------------------------------------------------
+Function    :  clearBS()
+Inputs      :  None
+Processing  :  This function clears Bits per second parameters
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearBS(void)
 {
 	fillRect(145,15,86,35,ILI9340_BLACK);
 }
-
+/*----------------------------------------------------------------------------
+Function    :  clearBT()
+Inputs      :  None
+Processing  :  This function clears Body Temperature parameters
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearBT(void)
 {
 	fillRect(145,105,86,35,ILI9340_BLACK);
 }
-
+/*----------------------------------------------------------------------------
+Function    :  clearST()
+Inputs      :  None
+Processing  :  This function clears Step parameters
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearST(void)
 {
 	fillRect(145,165,86,35,ILI9340_BLACK);
 }
-
-// clear the entire screen
+/*----------------------------------------------------------------------------
+Function    :  clearScrn()
+Inputs      :  None
+Processing  :  This function clears entire the screen
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearScrn(void)
 {
 	fillRect(0,0,240,320,ILI9340_BLACK);
 }
-
-// Clear the Alert Screen
+/*----------------------------------------------------------------------------
+Function    :  clearScrn3()
+Inputs      :  None
+Processing  :  This function clears Step parameters
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::clearScrn3(void)
 {
 	drawTriangle(120,10,240,190,10,190,ILI9340_BLACK);
@@ -713,17 +789,29 @@ void display_Task::clearScrn3(void)
 	drawString("ALERT",90,90,3,ILI9340_BLACK);
 	fillRect(75,125,115,55,ILI9340_BLACK);
 }
-
+/*----------------------------------------------------------------------------
+Function    :  displayScrn3()
+Inputs      :  None
+Processing  :  This function displays Alert screen
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::displayScrn3(void)
 {
 	drawTriangle(120,10,240,190,10,190,ILI9340_RED);
 	drawString("!",110,50,4,ILI9340_RED);
 	drawString("ALERT",90,90,3,ILI9340_RED);
 	drawString("FEVER",75,130,4,ILI9340_RED);
-//	fillRect(75,125,115,55,ILI9340_BLACK);
 }
-
-// Display sensor values
+/*----------------------------------------------------------------------------
+Function    :  displayScrn3()
+Inputs      :  None
+Processing  :  This function displays sensor screen
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::displayScrn1(void)
 {
 
@@ -773,7 +861,14 @@ void display_Task::displayScrn1(void)
 		drawString(buff,148,170,2,ILI9340_YELLOW);
 	}
 }
-// Display the clock screen
+/*----------------------------------------------------------------------------
+Function    :  displayScrn2()
+Inputs      :  None
+Processing  :  This function displays clock screen
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::displayScrn2(void)
 {
 
@@ -802,7 +897,14 @@ void display_Task::displayScrn2(void)
 	drawString(trim(rtc_get_date_time_str(),21,25),150,130,3,ILI9340_MAGENTA);
 }
 
-// Check time every minute
+/*----------------------------------------------------------------------------
+Function    :  minute_check()
+Inputs      :  None
+Processing  :  This function checks whether a minute, hour, day or year
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::minute_check ()
 {
 	// Has minute expired?
@@ -843,7 +945,7 @@ void display_Task::minute_check ()
 			minute = rtc_getmin();
 			xSemaphoreGive(triggerOneHour);
 		}
-		// Has an minute expired?
+		// Has a minute expired?
 		else
 		{
 			minute = rtc_getmin();
@@ -851,6 +953,14 @@ void display_Task::minute_check ()
 		}
 	}
 }
+/*----------------------------------------------------------------------------
+Function    :  Update_timer()
+Inputs      :  None
+Processing  :  This function updates software timers, de-bounce timers
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void Update_timer()
 {
  	 // Timer count to increment 1 sec timer
@@ -870,10 +980,12 @@ void Update_timer()
 	 {
 		 increment_debounce = 1;
 	 }
+	 // Button is pressed increment
 	 if(increment_debounce == 1)
 	 {
 		 debounce_count++;
 	 }
+	 // Its 300ms check the value of button again
 	 if(debounce_count >=3)
 	 {
 		 if(GPIOGetValue(2,5)== 1)
@@ -883,6 +995,7 @@ void Update_timer()
 		 debounce_count = 0;
 		 increment_debounce = 0;
 	 }
+	 // Second has expired signal display to update
  	 if(timer_count == SEC)
  	 {
  		 xSemaphoreGive(triggerOneSecond);
@@ -897,6 +1010,7 @@ void Update_timer()
  		 }
  		increment = 1;
  	 }
+ 	 // if flag is der upate the timeout
  	 if(increment)
  	screen_timeout++;
 
@@ -909,7 +1023,14 @@ void Update_timer()
  	}
 
 }
-
+/*----------------------------------------------------------------------------
+Function    :  Timer3_100ms_init()
+Inputs      :  None
+Processing  :  This function updates software timers, de-bounce timers
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void Timer3_100ms_init(void)
 {
 	 	 const lpc_timer_t hundred_ms_timer_source = (lpc_timer_t) Hundered_ms_timer;
@@ -930,7 +1051,14 @@ void Timer3_100ms_init(void)
 	     // Enable timer interrupt
 	     NVIC_EnableIRQ(timer_irq);
 }
-
+/*----------------------------------------------------------------------------
+Function    :  TIMER3_IRQHandler()
+Inputs      :  None
+Processing  :  This function is ISR for timer 3 interrupt, it calls update timers
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 extern "C"
 {
 	void TIMER3_IRQHandler()
@@ -942,15 +1070,28 @@ extern "C"
 	}
 }
 
-// Routine to Intialize UART3
+/*----------------------------------------------------------------------------
+Function    :  UART3_init()
+Inputs      :  None
+Processing  :  This function Initializes UART3
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task :: UART3_init(void)
 {
 	 // Set UART3 Baudrate to 9600
 	 uart_3.init(9600);
 }
-// Routines to  Initialize SSP0 parameters
 
-// Power on SSP0 interface
+/*----------------------------------------------------------------------------
+Function    :  UART3_init()
+Inputs      :  None
+Processing  :  This function Powers on SSP0 interface
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::SSP0_power(uint8_t mode)
 {
 	if(mode)
@@ -962,8 +1103,14 @@ void display_Task::SSP0_power(uint8_t mode)
 		LPC_SC->PCONP &= ~(mode<<21);
 	}
 }
-
-// Exchange 1 byte over SSP0
+/*----------------------------------------------------------------------------
+Function    :  SSP0_byte_transfer()
+Inputs      :  uint8_t send_byte
+Processing  :  This function Powers on SSP0 interface
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 uint8_t display_Task::SSP0_byte_transfer (uint8_t send_byte)
 {
 
@@ -975,69 +1122,137 @@ uint8_t display_Task::SSP0_byte_transfer (uint8_t send_byte)
     return LPC_SSP0->DR;
 
 }
-
-// Enable SSP0 interface
+/*----------------------------------------------------------------------------
+Function    :  SSP0_enable()
+Inputs      :  None
+Processing  :  This function Enables SSP0 interface
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::SSP0_enable  (void)
 {
 	LPC_SSP0->CR1 |=   (0b1   << 1);
 }
-
-// Disable SSP0 interface
+/*----------------------------------------------------------------------------
+Function    :  SSP0_disable()
+Inputs      :  None
+Processing  :  This function Disables SSP0 interface
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::SSP0_disable (void)
 {
 	LPC_SSP0->CR1 &=  ~(0b1   << 1);
 }
-
-// Is transmit queue of SSP0 is full?
+/*----------------------------------------------------------------------------
+Function    :  SSP0_TXfull()
+Inputs      :  None
+Processing  :  This function checks whether the transmit queue is full?
+Outputs     :  None
+Returns     :  True, if busy, False if not full
+Notes       :  None
+----------------------------------------------------------------------------*/
 bool display_Task::SSP0_TXfull(void)
 {
 	uint32_t mask = (0b1<<1);
 	bool return_val = !(LPC_SSP0->SR & mask);
 	return (return_val);
 }
-// Is SSP0 is busy in previous transmission?
+/*----------------------------------------------------------------------------
+Function    :  SSP0_busy()
+Inputs      :  None
+Processing  :  This function checks whether the SSP interface is busy
+Outputs     :  None
+Returns     :  True, if busy, False if not full
+Notes       :  None
+----------------------------------------------------------------------------*/
 bool display_Task::SSP0_busy(void)
 {
 	return (((LPC_SSP0->SR ) & (0b01 << 4)));
 }
-
-// Make CS - High
+/*----------------------------------------------------------------------------
+Function    :  display_CS_assert()
+Inputs      :  None
+Processing  :  This function asserts CS
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::display_CS_assert(void)
 {
 	GPIOSetValue(0,29,HIGH);
 }
-// Make CS - LOW
+/*----------------------------------------------------------------------------
+Function    :  display_CS_dessert()
+Inputs      :  None
+Processing  :  This function desserts CS
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::display_CS_dessert(void)
 {
 	GPIOSetValue(0,29,LOW);
 }
-// Make RST- High
+/*----------------------------------------------------------------------------
+Function    :  display_RST_assert()
+Inputs      :  None
+Processing  :  This function asserts RST
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::display_RST_assert(void)
 {
 	GPIOSetValue(0,30,HIGH);
 }
-// Make RST- LOW
+/*----------------------------------------------------------------------------
+Function    :  display_RST_dessert()
+Inputs      :  None
+Processing  :  This function desserts RST
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::display_RST_dessert(void)
 {
 	GPIOSetValue(0,30,LOW);
 }
-// Make D/C High
+/*----------------------------------------------------------------------------
+Function    :  display_DC_assert()
+Inputs      :  None
+Processing  :  This function makes D/C High
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::display_DC_assert(void)
 {
 	GPIOSetValue(1,19,HIGH);
 }
-// Make D/C High
+/*----------------------------------------------------------------------------
+Function    :  display_DC_dessert()
+Inputs      :  None
+Processing  :  This function makes D/C low
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void display_Task::display_DC_dessert(void)
 {
 	GPIOSetValue(1,19,LOW);
 }
 
-
-//
-/* code sample taken from http://www.geeksforgeeks.org */
-
- /* A C++ program to implement itoa() */
- /* A utility function to reverse a string  */
+/*----------------------------------------------------------------------------
+Function    :  reverse()
+Inputs      :  char str[], int length
+Processing  :  A utility function to reverse a string
+Outputs     :  None
+Returns     :  None
+Notes       :  code sample taken from http://www.geeksforgeeks.org
+----------------------------------------------------------------------------*/
  void reverse(char str[], int length)
  {
      int start = 0;
@@ -1049,8 +1264,14 @@ void display_Task::display_DC_dessert(void)
          end--;
      }
  }
-
- // Implementation of itoa()
+ /*----------------------------------------------------------------------------
+ Function    :  itoa()
+ Inputs      :  int num, char* str, int base
+ Processing  :  A utility function to covert integer into ascii
+ Outputs     :  None
+ Returns     :  char*
+ Notes       :  code sample taken from http://www.geeksforgeeks.org
+ ----------------------------------------------------------------------------*/
  char* itoa(int num, char* str, int base)
  {
      int i = 0;
@@ -1093,7 +1314,10 @@ void display_Task::display_DC_dessert(void)
      return str;
  }
 
-/******************************************************** gfx library /Adafruit *************************************************************************/
+ /****************************************************************************/
+ /*                      ADA FRUIT GFX Library for ILI9430                   */
+ /****************************************************************************/
+
 void display_Task::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 {
 
@@ -1333,5 +1557,8 @@ void display_Task::drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, 
     drawLine(x2, y2, x0, y0, color);
 }
 
-
+/*===================================================================
+// $Log: $1.0 AVD:Added comments to increase the readability
+//
+//--------------------------------------------------------------------*/
 
