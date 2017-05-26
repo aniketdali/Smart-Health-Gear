@@ -20,23 +20,37 @@
  *     aniket.dali@sjsu.edu
  */
 
-/**
- * @file
- * @brief This is the application entry point.
- */
-#include <stdio.h>
-#include <iostream>
-#include "utilities.h"
-#include "gpio.hpp"
-#include "eint3.h"
+
+/*****************************************************************************
+$Work file     : main.cpp $
+Description    : This file contains the Initialization of display and sensor tasks.
+Project(s)     : Smart Health Gear
+Compiler       : Cross ARM GCC
+OS			   : RTOS
+Original Author: $ Preetpal Kang
+$Author        : $ Aniket Dali
+$Date          : $ 26 May 2017
+$Revision      : 1.0 $
+*****************************************************************************/
+/****************************************************************************/
+/*                       INCLUDE FILES                                      */
+/****************************************************************************/
+
 #include "io.hpp"
 #include "queue.h"
 #include "tasks.hpp"
 #include "display.hpp"
-#include <i2c2.hpp>
-using namespace std;
 
 
+
+/*----------------------------------------------------------------------------
+Function    :  main
+Inputs      :  None
+Processing  :  This function is the main loop of the program
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 int main()
 {
 	scheduler_add_task(new heartRate(PRIORITY_LOW));

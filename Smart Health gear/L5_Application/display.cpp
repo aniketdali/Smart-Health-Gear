@@ -1,11 +1,17 @@
-/*
- * display.cpp
- *
- *  Created on: May 16, 2017
- *      Author: Aniket Dali
- */
-
-/****************************************************** header section **************************************************************/
+/*****************************************************************************
+$Work file     : display.cpp $
+Description    : This file contains the Initialization of display and sensor tasks.
+Project(s)     : Smart Health Gear
+Compiler       : Cross ARM GCC
+OS			   : RTOS
+Original Author: $ Aniket Dali
+$Author        : $ Aniket Dali
+$Date          : $ 26 May 2017
+$Revision      : 1.0 $
+*****************************************************************************/
+/****************************************************************************/
+/*                       INCLUDE FILES                                      */
+/****************************************************************************/
 #include "display.hpp"
 #include "printf_lib.h"
 #include "utilities.h"
@@ -29,29 +35,42 @@ extern "C"
 }
 using namespace std;
 
-// global buffer to convert integers into ascii
-char buff[50] = {0};
 
-// acquire the UART3 instance
+/****************************************************************************/
+/*                        VARIABLES AND MACROS                              */
+/****************************************************************************/
+// global buffer to convert integers into ascii to be sent over SPI to Display
+char buff[50] = {ZERO};
+// acquire the UART3 instance to push the data out over to the Bluetooth Application
 Uart3& uart_3 = Uart3::getInstance();
-
 // pointer to 100 millisecond pointer
-LPC_TIM_TypeDef *Hundred_millisec_timer_ptr        = NULL;
+LPC_TIM_TypeDef *Hundred_millisec_timer_ptr    = NULL;
+// Instance of RTC to load the current time.
+rtc_t mytime;
+// Global variable to hold the data acquired through Queues.
+int32_t Queue_data              = ZERO;
+// Display Screens
+volatile screens watch_skins    = clock_screen;
+volatile screens previous_skins = clock_screen;
 
-// Semaphores to signal events
+/************************** Semaphores and Mutexs ****************************/
+// Semaphores to signal events to update display clock
 SemaphoreHandle_t triggerOneSecond	           = NULL;
 SemaphoreHandle_t triggerOneMin  	           = NULL;
 SemaphoreHandle_t triggerOneHour  	           = NULL;
 SemaphoreHandle_t triggerOneDay  	  		   = NULL;
 SemaphoreHandle_t triggerOneMonth	   		   = NULL;
 SemaphoreHandle_t triggerOneYear	   		   = NULL;
+// Semaphores to signal event to lock/ unlock the display
 SemaphoreHandle_t lock_unlock_button	       = NULL;
+// Semaphores to signal event to show sensor values over display
 SemaphoreHandle_t senor_button	      		   = NULL;
+// Semaphores to control display timeout and switch de-bounces.
 SemaphoreHandle_t Timer_start				   = NULL;
 SemaphoreHandle_t Timer_increment			   = NULL;
 SemaphoreHandle_t sensor_debounce			   = NULL;
 
-// Semaphores to refresh sensor parameters
+// Semaphores to refresh displayed sensor parameters on change in readings
 SemaphoreHandle_t BS_REFRESH	               = NULL;
 SemaphoreHandle_t O2_REFRESH	      		   = NULL;
 SemaphoreHandle_t BT_REFRESH				   = NULL;
@@ -60,7 +79,20 @@ SemaphoreHandle_t ST_REFRESH     			   = NULL;
 // Mutex for mutual exclusion of LCD Refresh.
 SemaphoreHandle_t screen_change	     		   = NULL;
 
-/*************************************************** Character Array Operations ******************************************************/
+/****************************************************************************/
+/*                       FUNCTION DECLARATAIONS                             */
+/****************************************************************************/
+// callback for navigation button
+void callback_parameters();
+// Function to update all the software timers every 100 msec
+void Update_timer();
+// Timer 3 Interrupt
+void Timer3_100ms_init(void);
+// Routine to configure Power to drive LCD
+void LCDPower();
+
+
+/**************** Character Array Operations ****************************/
 // Routine to Trim the character array
 char * trim(char * str,uint8_t start, uint8_t end);
 // Routine to convert Integer to ASCII
@@ -68,20 +100,21 @@ char* itoa(int num, char* str, int base);
 // Routine to reverse the character string
 void reverse(char str[], int length);
 
-// Instance of RTC
-rtc_t mytime;
+/****************************************************************************/
+/*                       FUNCTION DEFINITIONS                               */
+/****************************************************************************/
 
-// callback for navigation button
-void callback_parameters();
-void Update_timer();
-void Timer3_100ms_init(void);
-void LCDPower();
 
-//#define HASH #
-//#define PLUS +
-int32_t Queue_data;
-volatile screens watch_skins = clock_screen;
-volatile screens previous_skins = clock_screen;
+
+/*----------------------------------------------------------------------------
+Function    :  display_Task (Constructor)
+Inputs      :  None
+Processing  :  This function is Constructor for the display_Task. It configures
+			   the SSP interface and port pins to interact with LCD module ILI9341
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 display_Task :: display_Task(uint8_t priority) :scheduler_task("display", 10240, priority)
 {
 
@@ -90,14 +123,13 @@ display_Task :: display_Task(uint8_t priority) :scheduler_task("display", 10240,
 	LPC_SC->PCLKSEL1 &= ~(0b11<<10);
 	// set PCLK = CLK
 	LPC_SC->PCLKSEL1 |= (0b01<<10);
-
 	// SCK1
 	GPIOSetMode(0,15,FUNC3);
 	// MISO
 	GPIOSetMode(0,17,FUNC3);
 	// MOSI
 	GPIOSetMode(0,18,FUNC3);
-	// SCK speed = CPU / 2
+	// SCK speed = CPU / 2 = 24 Mhz
     LPC_SSP0->CPSR = 2;
 	// set the data transfer to 8 bits.
 	LPC_SSP0->CR0  =   0b0111;
@@ -109,19 +141,29 @@ display_Task :: display_Task(uint8_t priority) :scheduler_task("display", 10240,
 	GPIOSetDir(0,30,OUTPUT);
 	// DC/RS
 	GPIOSetDir(1,19,OUTPUT);
+	// LED pin
 	GPIOSetDir(1,28,OUTPUT);
+	// Turn on the power to LED driver circuit
 	GPIOSetValue(1,28,1);
 }
-
+/*----------------------------------------------------------------------------
+Function    :  display_Task (run)
+Inputs      :  None
+Processing  :  This function is run function for the display_Task. It de-queues
+			   data from sensor queues, maintains the display state and refreshes
+			   the display to display current time and sensor values.
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 bool display_Task::run(void* p)
 {
 
-	// display initial values
+	// Display initial  sensor values ( All 0's)
 	xSemaphoreGive(BS_REFRESH);
 	xSemaphoreGive(O2_REFRESH);
 	xSemaphoreGive(BT_REFRESH);
 	xSemaphoreGive(ST_REFRESH);
-
 
 
 	while(1)
@@ -135,107 +177,132 @@ bool display_Task::run(void* p)
 				  case clock_screen:
 					 if(previous_skins == sensor_screen )
 					{
+						 // Store the Previous screen state
 						 previous_skins = clock_screen;
-						 printf("clock screen changed %d \n",previous_skins);
-						 // Clear sensor Screen
+						 // Clear sensor Screen to display black background
 						 clearScrn1();
 						 // Display clock Screen
 						 displayScrn2();
 					}
-					 // Second has elapsed check timer
+					// if a second has elapsed,check whether minutes, hours,
+					// days, months or years have changed along with it
 					if( xSemaphoreTake(triggerOneSecond,0))
 					{
 						minute_check();
 					}
+					// Year has changed
 					if(xSemaphoreTake(triggerOneYear,0))
 					{
 						event = YEAR_EVENT;
 						displayScrn2();
 					}
+					// Month has changed
 					else if( xSemaphoreTake(triggerOneMonth,0))
 					{
 						event = MONTH_EVENT;
 						displayScrn2();
 					}
+					// Day has changed
 					else if( xSemaphoreTake(triggerOneDay,0))
 					{
 						event = DAY_EVENT;
 						displayScrn2();
 					}
+					// Hour has changed
 					else if( xSemaphoreTake(triggerOneHour,0))
 					{
 						event = HOUR_EVENT;
 						displayScrn2();
 					}
+					// Minute has changed
 					else if( xSemaphoreTake(triggerOneMin,0))
 					{
 						event = MINUTE_EVENT;
 						displayScrn2();
 					}
 					break;
+
+					// Screen has to be changed to sensor screen
 				case sensor_screen:
 					if(previous_skins == clock_screen )
 					{
-						printf("inside screen %d \n",previous_skins);
+						// Clear Watch Screen to display black background
 						clearScrn2();
+						// Store the Previous screen state
 						previous_skins = sensor_screen;
 					}
-
-					printf("previous screen %d \n",previous_skins);
+					// Display sensor Screen
 					displayScrn1();
 					 break;
+					 // Future implementation
 				case warning_screen:
 					break;
 				}
-
+				// Release lock
 				xSemaphoreGive(screen_change);
 
-
+			// if Heart rate value has changed
 			if(xQueueReceive(heart_data,&Queue_data,100))
 			{
-
+				// Update the value
 				if(BS != Queue_data)
 				{
 					BS = Queue_data;
+					// Signal to update it on next refresh
 					xSemaphoreGive(BS_REFRESH);
 				}
 			}
+			// if Oxygen value has changed
 			if(xQueueReceive(oxygen_data,&Queue_data,100))
 			{
-
+				// Update the value
 				if(OX != Queue_data)
 				{
 					OX = Queue_data;
+					// Signal to update it on next refresh
 					xSemaphoreGive(O2_REFRESH);
 				}
 			}
+			// if Temperature value has changed
 			if(xQueueReceive(temp_data,&Queue_data,50))
 			{
-
+				// Update the value
 				if(BT != Queue_data)
 				{
 					BT = Queue_data;
+					// Signal to update it on next refresh
 					xSemaphoreGive(BT_REFRESH);
 				}
 			}
+			// if Number of steps has changed
 			if(xQueueReceive(step_data,&Queue_data,100))
 			{
-
+				// Update the value
 				if(ST != Queue_data)
 				{
 					ST = Queue_data;
+					// Signal to update it on next refresh
 					xSemaphoreGive(ST_REFRESH);
 				}
 			}
 
 			// Push the data out over Uart- HC05 for android application
 			uart_3.printf("#%3d+%3d+%3d+%4d+~",BS, OX, BT, ST);
+			// Sleep for 100 ticks so that lower priority tasks can run
 			vTaskDelay(100);
 		}
 	}
 	return 1;
 }
-
+/*----------------------------------------------------------------------------
+Function    :  button_Task (constructor)
+Inputs      :  None
+Processing  :  This function is constructor for the button_Task. It configures
+			   port pins to interact with LCD module ILI9341
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 button_Task :: button_Task(uint8_t priority) :scheduler_task("display", 1024, priority)
 {
 	   // Configure the interrupt for navigation Button to display Sensor Screen
@@ -243,44 +310,69 @@ button_Task :: button_Task(uint8_t priority) :scheduler_task("display", 1024, pr
 	  // Configure the interrupt to Lock/Unlock screen
 	  eint3_enable_port2(6,eint_rising_edge,LCDPower);
 }
-
+/*----------------------------------------------------------------------------
+Function    :  button_Task (Init)
+Inputs      :  None
+Processing  :  This function creates semaphores to signal events for LCD interaction
+			   buttons
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 bool button_Task :: init()
 {
 	lock_unlock_button   = xSemaphoreCreateBinary();
 	senor_button         = xSemaphoreCreateBinary();
 	return 1;
 }
-
+/*----------------------------------------------------------------------------
+Function    :  button_Task (run)
+Inputs      :  None
+Processing  :  This function creates is a run function for button tasks
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 bool button_Task :: run(void *p)
 {
 	while(1)
 	{
 
+		// Has Sensor screen button pressed?
 		if(xSemaphoreTake(sensor_debounce,0))
 		{
+			// Acquire Lock to change the screen
 			if(xSemaphoreTake(screen_change,portMAX_DELAY))
 			{
+				// Start the screen time_out
 				xSemaphoreGive(Timer_start);
 				previous_skins = watch_skins;
+				// change state machine to display sensor screen
 				watch_skins = sensor_screen;
 
+				// refresh the sensor screen with the new values.
 				xSemaphoreGive(BS_REFRESH);
 				xSemaphoreGive(O2_REFRESH);
 				xSemaphoreGive(BT_REFRESH);
 				xSemaphoreGive(ST_REFRESH);
-
+				// Release the Lock
 				xSemaphoreGive(screen_change);
+				// Sleep so that RTOS can schedule another sensor task.
 				vTaskDelay(100);
 			}
 		}
+		// Screen time has occurred?
 		else if(xSemaphoreTake(Timer_increment,0))
 		{
+			// Acquire Lock to change the screen
 			if(xSemaphoreTake(screen_change,portMAX_DELAY))
 			{
+				// change state machine to display clock screen
 				previous_skins = watch_skins;
 				watch_skins = clock_screen;
-				// timer start/restart
+				// Release the Lock
 				xSemaphoreGive(screen_change);
+				// Sleep so that RTOS can schedule another sensor task.
 				vTaskDelay(100);
 			}
 
@@ -294,29 +386,53 @@ bool button_Task :: run(void *p)
 
 	return 1;
 }
-
+/*----------------------------------------------------------------------------
+Function    :  callback_parameters()
+Inputs      :  None
+Processing  :  This function signals debounce timer to start
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void callback_parameters()
 {
-	// Signal the Sensor Screen event
-	LPC_GPIOINT->IO2IntClr = 0xFFFFFFFF;
+	// Signal the Sensor Screen button pressed event to start the de-bounce timer
+	// to verify the validy of the button pressed
 	xSemaphoreGive(senor_button);
 }
-
+/*----------------------------------------------------------------------------
+Function    :  LCDPower()
+Inputs      :  None
+Processing  :  This function controls the power to LCD
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void LCDPower()
 {
 	static bool Power = SET;
 	if(Power)
 	{
+		// Turn Off the LCD
 		GPIOSetValue(1,28,0);
 		Power = 0;
 	}
 	else
 	{
+		// Turn ON the LCD
 		GPIOSetValue(1,28,1);
 		Power = 1;
 	}
 }
-
+/*----------------------------------------------------------------------------
+Function    :  display_Task(init)
+Inputs      :  None
+Processing  :  This function Initializes LCD ILI9341, Creates Queues, Semaphores
+			   and mutex for signaling the sensor tasks, acquiring the data.
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 bool display_Task::init(void)
 {
 
@@ -329,7 +445,7 @@ bool display_Task::init(void)
 	 display_RST_assert();
 	 delay_ms(150);
 
-	/******************************************** commands to configure ILI9340I *****************************************************/
+	/*********************** commands to configure ILI9340I **********************/
 	  writecommand(0xEF);
 	  writedata(0x03);
 	  writedata(0x80);
@@ -453,7 +569,7 @@ bool display_Task::init(void)
 
 	  // Make the background black
 	  clearScrn();
-	  // Display Clock
+	  // Display Clock at the begining of the product.
 	  displayScrn2();
 
 
@@ -503,7 +619,7 @@ bool display_Task::init(void)
 	 day    = rtc_getday();
 	 year   = rtc_getyear();
 
-	 // Initialize UART 3
+	 // Initialize UART 3 to communicate over UART with the bluetooth task
 	 UART3_init();
 
      return 1;
