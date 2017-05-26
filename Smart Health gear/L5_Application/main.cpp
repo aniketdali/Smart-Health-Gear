@@ -41,8 +41,6 @@ $Revision      : 1.0 $
 #include "tasks.hpp"
 #include "display.hpp"
 
-
-
 /*----------------------------------------------------------------------------
 Function    :  main
 Inputs      :  None
