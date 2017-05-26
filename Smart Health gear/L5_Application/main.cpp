@@ -1,5 +1,5 @@
 /*
- *     SocialLedge.com - Copyright (C) 2013
+ *
  *
  *     This file is part of free software framework for embedded processors.
  *     You can use it and/or distribute it as long as this copyright header
@@ -12,8 +12,12 @@
  *      I SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR
  *      CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
  *
- *     You can reach the author of this software at :
+ *     You can reach the main author of this software at :
  *          p r e e t . w i k i @ g m a i l . c o m
+ *
+ *     The file has been modified by Aniket Dali for Academic project made for San Jose State University
+ *     You can reach the current author of this software at:
+ *     aniket.dali@sjsu.edu
  */
 
 /**
