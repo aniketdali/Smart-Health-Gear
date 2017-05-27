@@ -1,50 +1,51 @@
-/*
- * tasks.cpp
- *
- *  Created on: May 9, 2017
- *      Author: Sobey
- */
+/*****************************************************************************
+$Work file     : tasks.cpp $
+Description    : This file contains the Initialization of display and sensor tasks.
+Project(s)     : Smart Health Gear
+Compiler       : Cross ARM GCC
+OS			   : RTOS
+Original Author: $ JeanMary M
+$Author        : $ Aniket Dali
+$Date          : $ 26 May 2017
+$Revision      : 1.0 $
+*****************************************************************************/
 
+
+/****************************************************************************/
+/*                       INCLUDE FILES                                      */
+/****************************************************************************/
 #include "tasks.hpp"
 #include "algorithm.hpp"
 #include "eint.h"
 #include "handlers.hpp"
 #include "queue.h"
-//#include  "display.hpp"
 #include "lpc_timers.h"
+/****************************************************************************/
+/*                        VARIABLES AND MACROS                              */
+/****************************************************************************/
 
+// Queue to share Temperature values
 QueueHandle_t temp_data = NULL;
-SemaphoreHandle_t startheart = NULL;
+// Queue to share Steps values
 QueueHandle_t step_data =  NULL;
-
+// Get instance of I2C1 to communicate with Hear Rate - Oxygen Sensor
 I2C1& i2c1 = I2C1::getInstance();
 volatile bool flag1 = false;
 extern volatile bool start;
-bool bodyTemperature :: run(void *p)
-{
-	while(1)
-	{
-		if(start == true)
-		{
-			i2c1.readReg(I2CAddr_TemperatureSensor, 0);
-			delay_ms(500);
-		}
-	}
+#define MAX_BRIGHTNESS 255
+GPIO_CUSTOM gpioObj;
 
-}
-
+/*----------------------------------------------------------------------------
+Function    :  maxim_max30102_read_fifo ()
+Inputs      :  uint32_t *pun_red_led, uint32_t *pun_ir_led
+Processing  :  This function reads a set of samples from the MAX30102 FIFO register
+Outputs     :  *pun_red_led   - pointer that stores the red LED reading data
+ 	 	 	   *pun_ir_led    - pointer that stores the IR LED reading data
+Returns     :  true on success
+Notes       :  Algorithm by Maxim, edited by Jean Mary M
+----------------------------------------------------------------------------*/
 
 bool heartRate :: maxim_max30102_read_fifo(uint32_t *pun_red_led, uint32_t *pun_ir_led)
-/**
-* \brief        Read a set of samples from the MAX30102 FIFO register
-* \par          Details
-*               This function reads a set of samples from the MAX30102 FIFO register
-*
-* \param[out]   *pun_red_led   - pointer that stores the red LED reading data
-* \param[out]   *pun_ir_led    - pointer that stores the IR LED reading data
-*
-* \retval       true on success
-*/
 {
   uint32_t un_temp;
  // unsigned char uch_temp;
@@ -81,23 +82,39 @@ bool heartRate :: maxim_max30102_read_fifo(uint32_t *pun_red_led, uint32_t *pun_
 
   return true;
 }
-#define MAX_BRIGHTNESS 255
-GPIO_CUSTOM gpioObj;
+/*----------------------------------------------------------------------------
+Function    :  heartRate ::run ()
+Inputs      :  None
+Processing  :  This function manintains a window of 500 samples, 100 samples/sec.
+			   It finds the peaks, calculates minimum distance between peaks to
+			   calculate heart rate and oxygen level.
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 bool heartRate :: run(void *p)
 {
 
 
 			// GPIO 2 as INPUT to read Interrupt value
 			gpioObj.setInputDir(2, 0);
-			uint32_t aun_ir_buffer[500]; //IR LED sensor data
-			int32_t n_ir_buffer_length;    //data length
-			uint32_t aun_red_buffer[500];    //Red LED sensor data
-			int32_t n_sp02; //SPO2 value
-			int8_t ch_spo2_valid;   //indicator to show if the SP02 calculation is valid
-			int32_t n_heart_rate;   //heart rate value
-			int8_t  ch_hr_valid;    //indicator to show if the heart rate calculation is valid
+			//IR LED sensor data
+			uint32_t aun_ir_buffer[500];
+			 //data length
+			int32_t n_ir_buffer_length;
+			//Red LED sensor data
+			uint32_t aun_red_buffer[500];
+			//SPO2 value
+			int32_t n_sp02;
+			//indicator to show if the SP02 calculation is valid
+			int8_t ch_spo2_valid;
+			//heart rate value
+			int32_t n_heart_rate;
+			//indicator to show if the heart rate calculation is valid
+			int8_t  ch_hr_valid;
 			uint8_t uch_dummy;
-			uint32_t un_min, un_max, un_prev_data;  //variables to calculate the on-board LED brightness that reflects the heartbeats
+			//variables to calculate the on-board LED brightness that reflects the heartbeats
+			uint32_t un_min, un_max, un_prev_data;
 			int i;
 			int32_t n_brightness;
 			float f_temp;
@@ -105,32 +122,39 @@ bool heartRate :: run(void *p)
 			n_brightness=0;
 			un_min = 0x3FFFF;
 			un_max=0;
-			// def
-			uint32_t pun_red_led;
-			uint32_t pun_ir_led;
-
 			Board_I2C_Device_AddressesI2C1 deviceAdd;
 			deviceAdd = I2CAddr_HeartRateSensor;
-			uint8_t data[4] = {5, 1, 0, 0};
-		//	int a;
 
-			i2c1.writeReg(deviceAdd, 0x09, 0x03); // HR mode
-			i2c1.writeReg(deviceAdd, 0x02, 0xC0); // intr 1 enable
-			i2c1.writeReg(deviceAdd, 0x03, 0x00); // intr 2 enable
-			i2c1.writeReg(deviceAdd, 0x04, 0x00); // fifo write ptr
-			i2c1.writeReg(deviceAdd, 0x05, 0x00); // fifo ovf ptr
-			i2c1.writeReg(deviceAdd, 0x06, 0x00); // fifo read ptr
-			i2c1.writeReg(deviceAdd, 0x08, 0x0F); // fifo config
-			i2c1.writeReg(deviceAdd, 0x0C, 0x24); // led 1
-			i2c1.writeReg(deviceAdd, 0x0D, 0x24); // led 2
-			i2c1.writeReg(deviceAdd, 0x10, 0x7F); // pilot led
-			i2c1.writeReg(deviceAdd, 0x0A, 0x27); // so2 config
+			// Initialize the Hear rate sensor
+
+			// HR mode
+			i2c1.writeReg(deviceAdd, 0x09, 0x03);
+			// intr 1 enable
+			i2c1.writeReg(deviceAdd, 0x02, 0xC0);
+			// intr 2 enable
+			i2c1.writeReg(deviceAdd, 0x03, 0x00);
+			// fifo write ptr
+			i2c1.writeReg(deviceAdd, 0x04, 0x00);
+			// fifo ovf ptr
+			i2c1.writeReg(deviceAdd, 0x05, 0x00);
+			// fifo read ptr
+			i2c1.writeReg(deviceAdd, 0x06, 0x00);
+			// fifo config
+			i2c1.writeReg(deviceAdd, 0x08, 0x0F);
+			// led 1
+			i2c1.writeReg(deviceAdd, 0x0C, 0x24);
+			// led 2
+			i2c1.writeReg(deviceAdd, 0x0D, 0x24);
+			// pilot led
+			i2c1.writeReg(deviceAdd, 0x10, 0x7F);
+			// so2 config
+			i2c1.writeReg(deviceAdd, 0x0A, 0x27);
 
 
+			//buffer length of 100 stores 5 seconds of samples running at 100sps
+			n_ir_buffer_length=500;
 
-			n_ir_buffer_length=500; //buffer length of 100 stores 5 seconds of samples running at 100sps
-
-			// enable port 2 interrupt
+			// enable port 2 interrupt to initiate the sampling only upon detection of finger
 			eint3_enable_port2(0, eint_falling_edge, heartrate_irq_callback);
 
 			//read the first 500 samples, and determine the signal range
@@ -143,23 +167,23 @@ bool heartRate :: run(void *p)
 				maxim_max30102_read_fifo((aun_red_buffer+i), (aun_ir_buffer+i));  //read from MAX30102 FIFO
 
 				if(un_min>aun_red_buffer[i])
-					un_min=aun_red_buffer[i];    //update signal min
+					//update signal min
+					un_min=aun_red_buffer[i];
 				if(un_max<aun_red_buffer[i])
-					un_max=aun_red_buffer[i];    //update signal max
+					//update signal max
+					un_max=aun_red_buffer[i];
 			}
 
 
-				//calculate heart rate and SpO2 after first 500 samples (first 5 seconds of samples)
+			//calculate heart rate and SpO2 after first 500 samples (first 5 seconds of samples)
 			maxim_heart_rate_and_oxygen_saturation(aun_ir_buffer, n_ir_buffer_length, aun_red_buffer, &n_sp02, &ch_spo2_valid, &n_heart_rate, &ch_hr_valid);
 
 				//Continuously taking samples from MAX30102.  Heart rate and SpO2 are calculated every 1 second
 				while(1)
 				{
-
 					i=0;
 					un_min=0x3FFFF;
 					un_max=0;
-
 					//dumping the first 100 sets of samples in the memory and shift the last 400 sets of samples to the top
 					for(i=100;i<500;i++)
 					{
@@ -177,7 +201,6 @@ bool heartRate :: run(void *p)
 					for(i=400;i<500;i++)
 					{
 						un_prev_data=aun_red_buffer[i-1];
-					  //  while(((LPC_GPIOINT->IO2IntStatF & 0x01))!=1);
 						while(!flag1);
 						flag1 = false;
 						maxim_max30102_read_fifo((aun_red_buffer+i), (aun_ir_buffer+i));
@@ -208,22 +231,28 @@ bool heartRate :: run(void *p)
 			    	{
 			    			if(xQueueSend(heart_data,&n_heart_rate,100))
 			    			{
-
+			    				//debug
 			    			}
 			    	}
 			    	if( ch_spo2_valid == 1 && n_sp02 >70)
 			    	{
 			        	if(xQueueSend(oxygen_data,&n_sp02,100))
 			        	{
-
+			        		//debug
 			        	}
 			    	}
-
 				}
-
 	    return true;
 }
-
+/*----------------------------------------------------------------------------
+Function    :  tempMeasure::run ()
+Inputs      :  None
+Processing  :  This function reads the analog channel and maps the voltage on pin to find
+ 	 	 	   out the resistance of thermistor which is then used to map to a corresponding
+ 	 	 	   temperature value using resistance-temperature table.
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 bool tempMeasure:: run(void *p)
 {
 		while(1)
@@ -257,27 +286,36 @@ bool tempMeasure:: run(void *p)
 
 				}
 				int32_t body_temp = temperature;
+				// Push the data in the Queue
 				xQueueSend(temp_data,&body_temp,portMAX_DELAY);
 			}
 }
-
-
+/*----------------------------------------------------------------------------
+Function    :  orient_compute(constructor)
+Inputs      :  None
+Processing  :  This function creates a Queue between orient compute and orient process
+			   Task and calibrate initial position
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 orient_compute::orient_compute(uint8_t priority) :scheduler_task("compute", 4096, priority)
  {
 		     	Timer2_init();
 	            QueueHandle_t my_queue = xQueueCreate(1, sizeof(forBack_Count));
-
 	            addSharedObject(shared_OrientQueueId, my_queue);
-				 // Create a binary semaphore 1 sec delay
-				 vSemaphoreCreateBinary( triggerOneSec );
-				 // Create a binary semaphore 1 Minute delay
-				 vSemaphoreCreateBinary( triggerTenMilliSec ); // Create the semaphore
-				 xSemaphoreTake(triggerOneSec, 0);
-				 xSemaphoreTake(triggerTenMilliSec, 0);
-	             caliberate();
+				 // Create a binary semaphore 100 msec delay
+				 vSemaphoreCreateBinary( triggerHundredMilliSec );
+				 // Collect samples to get the reference position of wrist
+				 calibrate();
  }
-
-void orient_compute::caliberate(void)
+/*----------------------------------------------------------------------------
+Function    :  calibrate()
+Inputs      :  None
+Processing  :  This function acquires 25 samples of orientation to take sorted average
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
+void orient_compute::calibrate(void)
  {
 	if(first == 0)
 	{
@@ -306,6 +344,13 @@ void orient_compute::caliberate(void)
 	first++;
 	sort_Function();
  }
+/*----------------------------------------------------------------------------
+Function    :  sort_Function()
+Inputs      :  None
+Processing  :  This function sorts accelerometer values in ascending values
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void orient_compute::sort_Function(void)
 {
 				sort(X, X + 25);
@@ -321,22 +366,18 @@ void orient_compute::sort_Function(void)
 	        	y_th = (Y[0] + Y[24])/2;
 	        	z_th = (Z[0] + Z[24])/2;
 }
-
-void orient_compute:: sort_Window(void)
-{
-
-	sort(X_run, X_run + 25);
-	sort(Y_run, Y_run + 25);
-	sort(Z_run, Z_run + 25);
-
-}
-
+/*----------------------------------------------------------------------------
+Function    :  calculate_count()
+Inputs      :  None
+Processing  :  This function increments step count
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 forBack_Count orient_compute::calculate_count(void)
 {
 
 	forBack_Count count = invalid;
-		if( xSemaphoreTake(triggerTenMilliSec,portMAX_DELAY))
-		{
+
           for(int i=0; i<24; i++)
           {
 			X[i] = AS.getX();
@@ -344,9 +385,6 @@ forBack_Count orient_compute::calculate_count(void)
 			Z[i] = AS.getZ();
           }
 
-		}
-
-		sort_Window();
 		 if(((x_old + 15 < x_prev )  && (x_th + 15 < x_prev )) )
 		{
 			count = forw;
@@ -361,60 +399,44 @@ forBack_Count orient_compute::calculate_count(void)
 		}
 		return count;
 }
-
+/*----------------------------------------------------------------------------
+Function    :  orient_compute::run
+Inputs      :  None
+Processing  :  This function is a producer task and puts then newly calculated
+			   orientation in the queue.
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 bool  orient_compute::run(void *p)
  {
-
-
-     	forBack_Count count = calculate_count();
-
-			xQueueSend(getSharedObject(shared_OrientQueueId), &count, portMAX_DELAY);
-
-
-			if( xSemaphoreTake(triggerOneSec,portMAX_DELAY))
+	forBack_Count orientation = invalid;
+	while(1)
+	{
+			if( xSemaphoreTake(triggerHundredMilliSec,portMAX_DELAY))
 			{
-					 caliberate();
+					 calibrate();
+						orientation = calculate_count();
+						if(orientation == forw || orientation == back )
+						{
+							if(xQueueSend(step_data,&step_Count,0))
+							{
+								//debug
+							}
+						}
 			}
+	}
 
      return true;
  }
 
-orient_process::orient_process (uint8_t priority) : scheduler_task("process", 4096, priority)
-{
-	// do nothing
-}
-
-bool orient_process:: run(void *p)
-{
-           /* We first get the queue handle the other task added using addSharedObject() */
-
-       	forBack_Count orientation = invalid;
-        QueueHandle_t qid = getSharedObject(shared_OrientQueueId);
-
-
-        while(1)
-        {
-				/* Sleep the task forever until an item is available in the queue */
-				if (xQueueReceive(qid, &orientation, portMAX_DELAY))
-				{
-					if(orientation == forw)
-						printf("%d Step:\n", step_Count);
-					else if(orientation == back)
-						printf("%d Step:\n", step_Count);
-					else
-						;
-
-			        	if(xQueueSend(step_data,&step_Count,0))
-			        	{
-
-			        	}
-
-
-				}
-        }
-           return true;
-}
-
+/*----------------------------------------------------------------------------
+Function    :  TIMER2_IRQHandler
+Inputs      :  None
+Processing  :  This function is a producer task and puts then newly calculated
+			   orientation in the queue.
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 extern "C"
 {
 
@@ -422,12 +444,19 @@ void TIMER2_IRQHandler()
 {
 	// clear the interrupt
 	one_ms_timer_ptr->IR =0b1;
-	// Trigger 1ms task
-	// Update 1 sec and 1 min timer
-	Update_timers_acceleration();
+	// Trigger 100ms task
+	xSemaphoreGive(triggerHundredMilliSec);
 }
 
 }
+/*----------------------------------------------------------------------------
+Function    :  Timer2_init
+Inputs      :  None
+Processing  :  This function is a producer task and puts then newly calculated
+			   orientation in the queue.
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
  void Timer2_init(void)
 {
 
@@ -440,8 +469,8 @@ void TIMER2_IRQHandler()
 	 lpc_timer_enable(one_ms_timer_source, one_micro_second);
 	 // Stop on Interrupt , No auto re-start
 	 one_ms_timer_ptr->MCR = 0b11;
-	 //  timeout is 1 msec
-	 one_ms_timer_ptr->MR0 = 10000;
+	 //  timeout is 100 msec
+	 one_ms_timer_ptr->MR0 = 100000;
 	 // enable LPC timer
 	 lpc_timer_enable(one_ms_timer_source, one_micro_second);
 	 // Get the IRQ number for timer interrupt
@@ -451,31 +480,3 @@ void TIMER2_IRQHandler()
 
 }
 
-  void Update_timers_acceleration()
-   {
-  	 // Timer count to increment 1 sec timer
-  	 static uint16_t timer_count = 0;
-  	 // Timer count to increment 1 minute timer
-  	 static uint8_t  cpu_timer_count = 0;
-
-  	 timer_count++;
-
-  	 if(timer_count == TENMILLI)
-  	 {
-  		 // trigger SD_card write routine
-  		 xSemaphoreGive(triggerTenMilliSec);
-  		 // trigger WatchDog write routine
-
-  		 // Increment seconds
-  		 cpu_timer_count ++;
-  		 // Is it 1 Minute?
-  		 if(cpu_timer_count == SEC)
-  		 {
-  			 xSemaphoreGive(triggerOneSec);
-  			 cpu_timer_count = 0;
-  		 }
-  		 timer_count = 0;
-  	 }
-
-
-   }

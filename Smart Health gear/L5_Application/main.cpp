@@ -56,7 +56,6 @@ int main()
 	scheduler_add_task(new button_Task(PRIORITY_MEDIUM));
 	scheduler_add_task(new tempMeasure(PRIORITY_LOW));
     scheduler_add_task(new orient_compute(PRIORITY_LOW));
-    scheduler_add_task(new orient_process(PRIORITY_LOW));
     scheduler_start();
     return 0;
 }

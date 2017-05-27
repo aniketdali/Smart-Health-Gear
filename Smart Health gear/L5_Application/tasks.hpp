@@ -448,12 +448,12 @@ typedef enum {
 } sharedHandleId_t;
 
 static LPC_TIM_TypeDef * one_ms_timer_ptr = NULL;
-static SemaphoreHandle_t triggerTenMilliSec = NULL;
-static SemaphoreHandle_t triggerOneSec	   = NULL;
+static SemaphoreHandle_t triggerTenMicroSec = NULL;
+static SemaphoreHandle_t triggerHundredMilliSec	   = NULL;
 void caliberate(void);
 #define  one_ms_timer    (2)
 #define  SET			 (1)
-#define  SEC			 (100)
+#define  HUNDRED_MILLI	 (100)
 #define  TENMILLI	     (1)
 void Update_timers_acceleration();
 
@@ -479,23 +479,14 @@ void Timer2_init(void);
  		int16_t X[50],Y[50],Z[50];
  		int16_t X_run[25],Y_run[25],Z_run[25];
  		int step =0;
- 		uint32_t time 		   = 0;
+ 		uint32_t time 		        = 0;
         orient_compute(uint8_t priority);
-        void caliberate(void);
+        void calibrate(void);
         void sort_Function(void);
         void sort_Window(void);
         forBack_Count calculate_count(void);
         bool run(void *p);
  };
- // Orientation Process Task
- class orient_process : public scheduler_task
- {
-     public:
-         orient_process (uint8_t priority);
-         bool run(void *p);
- };
-
-
 class tempMeasure : public scheduler_task
 {
     public:
@@ -521,7 +512,7 @@ class bodyTemperature : public scheduler_task
 class heartRate : public scheduler_task
 {
     public:
-	heartRate (uint8_t priority) : scheduler_task("room", 5120, priority)
+	heartRate (uint8_t priority) : scheduler_task("hrt-rt", 5120, priority)
     {
         /* Nothing to init */
     }
