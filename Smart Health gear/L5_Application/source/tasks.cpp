@@ -301,8 +301,6 @@ Notes       :  None
 orient_compute::orient_compute(uint8_t priority) :scheduler_task("compute", 4096, priority)
  {
 		     	Timer2_init();
-	            QueueHandle_t my_queue = xQueueCreate(1, sizeof(forBack_Count));
-	            addSharedObject(shared_OrientQueueId, my_queue);
 				 // Create a binary semaphore 100 msec delay
 				 vSemaphoreCreateBinary( triggerHundredMilliSec );
 				 // Collect samples to get the reference position of wrist
@@ -479,4 +477,7 @@ Notes       :  None
 	 NVIC_EnableIRQ(timer_irq);
 
 }
-
+ /*===================================================================
+ // $Log: $1.0 AVD:Added comments to increase the readability
+ //
+ //--------------------------------------------------------------------*/

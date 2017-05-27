@@ -1,39 +1,53 @@
-/*
- * algorithm.cpp
- *
- *  Created on: May 6, 2017
- *      Author: Sobey
- */
+
+
+/*****************************************************************************
+$Work file     : algorithm.cpp $
+Description    : This file contains the Algorithms to calculate heart rate and
+				 blood oxygen
+Project(s)     : Smart Health Gear
+Compiler       : Cross ARM GCC
+OS			   : RTOS
+Original Author: $ MAXIM REFDES 117
+$Author        : $ JeanMary M
+$Date          : $ 26 May 2017
+$Revision      : 1.0 $
+*****************************************************************************/
+
+/****************************************************************************/
+/*                       INCLUDE FILES                                      */
+/****************************************************************************/
 #include "algorithm.hpp"
 #include <stdio.h>
 #include "utilities.h"
 #include "display.hpp"
-//#include "semphr.h"
+
+
+/****************************************************************************/
+/*                        VARIABLES AND MACROS                              */
+/****************************************************************************/
 extern volatile bool start;
 QueueHandle_t oxygen_data = NULL;
 QueueHandle_t heart_data  = NULL;
-//SemaphoreHandle_t queue_access = NULL    ;
 
 
+/*----------------------------------------------------------------------------
+Function    :  maxim_heart_rate_and_oxygen_saturation ()
+Inputs      :  *pun_ir_buffer           - IR sensor data buffer
+				n_ir_buffer_length      - IR sensor data buffer length
+			   *pun_red_buffer          - Red sensor data buffer
+
+Processing  :  This function calculates the heart rate and SpO2 level By detecting  peaks of PPG cycle and corresponding AC/DC of red/infra-red signal, the ratio for the SPO2 is computed.
+*               Since this algorithm is aiming for Arm M0/M3. formaula for SPO2 did not achieve the accuracy due to register overflow.
+*               Thus, accurate SPO2 is pre-calculated and save longo uch_spo2_table[] per each ratio.
+Outputs     :  *pn_spo2                - Calculated SpO2 value
+ 	 	 	   *pch_spo2_valid         - 1 if the calculated SpO2 value is valid
+ 	 	 	   *pn_heart_rate          - Calculated heart rate value
+ 	 	 	   *pch_hr_valid           - 1 if the calculated heart rate value is valid
+Returns     :  None
+Notes       :  Algorithm by Maxim, edited by Jean Mary M
+----------------------------------------------------------------------------*/
 void maxim_heart_rate_and_oxygen_saturation(uint32_t *pun_ir_buffer,  int32_t n_ir_buffer_length, uint32_t *pun_red_buffer, int32_t *pn_spo2, int8_t *pch_spo2_valid,
                               int32_t *pn_heart_rate, int8_t  *pch_hr_valid)
-/**
-* \brief        Calculate the heart rate and SpO2 level
-* \par          Details
-*               By detecting  peaks of PPG cycle and corresponding AC/DC of red/infra-red signal, the ratio for the SPO2 is computed.
-*               Since this algorithm is aiming for Arm M0/M3. formaula for SPO2 did not achieve the accuracy due to register overflow.
-*               Thus, accurate SPO2 is precalculated and save longo uch_spo2_table[] per each ratio.
-*
-* \param[in]    *pun_ir_buffer           - IR sensor data buffer
-* \param[in]    n_ir_buffer_length      - IR sensor data buffer length
-* \param[in]    *pun_red_buffer          - Red sensor data buffer
-* \param[out]    *pn_spo2                - Calculated SpO2 value
-* \param[out]    *pch_spo2_valid         - 1 if the calculated SpO2 value is valid
-* \param[out]    *pn_heart_rate          - Calculated heart rate value
-* \param[out]    *pch_hr_valid           - 1 if the calculated heart rate value is valid
-*
-* \retval       None
-*/
 {
     uint32_t un_ir_mean ,un_only_once ;
     int32_t k ,n_i_ratio_count;
@@ -208,29 +222,32 @@ void maxim_heart_rate_and_oxygen_saturation(uint32_t *pun_ir_buffer,  int32_t n_
 
 }
 
-
+/*----------------------------------------------------------------------------
+Function    :  maxim_find_peaks ()
+Inputs      :  int32_t *pn_locs, int32_t *pn_npks, int32_t *pn_x, int32_t n_size,
+ 	 	 	   int32_t n_min_height, int32_t n_min_distance, int32_t n_max_num
+Processing  :  This function finds at most MAX_NUM peaks above MIN_HEIGHT
+			   separated by at least MIN_DISTANCE
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void maxim_find_peaks(int32_t *pn_locs, int32_t *pn_npks, int32_t *pn_x, int32_t n_size, int32_t n_min_height, int32_t n_min_distance, int32_t n_max_num)
-/**
-* \brief        Find peaks
-* \par          Details
-*               Find at most MAX_NUM peaks above MIN_HEIGHT separated by at least MIN_DISTANCE
-*
-* \retval       None
-*/
 {
     maxim_peaks_above_min_height( pn_locs, pn_npks, pn_x, n_size, n_min_height );
     maxim_remove_close_peaks( pn_locs, pn_npks, pn_x, n_min_distance );
     *pn_npks = min( *pn_npks, n_max_num );
 }
-
+/*----------------------------------------------------------------------------
+Function    :  maxim_peaks_above_min_height ()
+Inputs      :  int32_t *pn_locs, int32_t *pn_npks, int32_t  *pn_x, int32_t n_size, int32_t n_min_height
+Processing  :  This function finds at most MAX_NUM peaks above MIN_HEIGHT
+			   separated by at least MIN_DISTANCE
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void maxim_peaks_above_min_height(int32_t *pn_locs, int32_t *pn_npks, int32_t  *pn_x, int32_t n_size, int32_t n_min_height)
-/**
-* \brief        Find peaks above n_min_height
-* \par          Details
-*               Find all peaks above MIN_HEIGHT
-*
-* \retval       None
-*/
 {
     int32_t i = 1, n_width;
     *pn_npks = 0;
@@ -253,15 +270,15 @@ void maxim_peaks_above_min_height(int32_t *pn_locs, int32_t *pn_npks, int32_t  *
     }
 }
 
-
+/*----------------------------------------------------------------------------
+Function    :  maxim_remove_close_peaks ()
+Inputs      :  int32_t *pn_locs, int32_t *pn_npks, int32_t *pn_x, int32_t n_min_distance
+Processing  :  This function Removes peaks separated by less than MIN_DISTANCE
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void maxim_remove_close_peaks(int32_t *pn_locs, int32_t *pn_npks, int32_t *pn_x, int32_t n_min_distance)
-/**
-* \brief        Remove peaks
-* \par          Details
-*               Remove peaks separated by less than MIN_DISTANCE
-*
-* \retval       None
-*/
 {
 
     int32_t i, j, n_old_npks, n_dist;
@@ -283,14 +300,15 @@ void maxim_remove_close_peaks(int32_t *pn_locs, int32_t *pn_npks, int32_t *pn_x,
     maxim_sort_ascend( pn_locs, *pn_npks );
 }
 
+/*----------------------------------------------------------------------------
+Function    :  maxim_sort_ascend ()
+Inputs      :  int32_t *pn_x,int32_t n_size
+Processing  :  This function Sort array in ascending order (insertion sort algorithm)
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void maxim_sort_ascend(int32_t *pn_x,int32_t n_size)
-/**
-* \brief        Sort array
-* \par          Details
-*               Sort array in ascending order (insertion sort algorithm)
-*
-* \retval       None
-*/
 {
     int32_t i, j, n_temp;
     for (i = 1; i < n_size; i++) {
@@ -301,14 +319,15 @@ void maxim_sort_ascend(int32_t *pn_x,int32_t n_size)
     }
 }
 
+/*----------------------------------------------------------------------------
+Function    :  maxim_sort_indices_descend ()
+Inputs      :  int32_t *pn_x, int32_t *pn_indx, int32_t n_size
+Processing  :  This function Sort indices according to descending order (insertion sort algorithm)
+Outputs     :  None
+Returns     :  None
+Notes       :  None
+----------------------------------------------------------------------------*/
 void maxim_sort_indices_descend(int32_t *pn_x, int32_t *pn_indx, int32_t n_size)
-/**
-* \brief        Sort indices
-* \par          Details
-*               Sort indices according to descending order (insertion sort algorithm)
-*
-* \retval       None
-*/
 {
     int32_t i, j, n_temp;
     for (i = 1; i < n_size; i++) {

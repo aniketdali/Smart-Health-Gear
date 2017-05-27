@@ -1,28 +1,20 @@
-/*
- *     SocialLedge.com - Copyright (C) 2013
- *
- *     This file is part of free software framework for embedded processors.
- *     You can use it and/or distribute it as long as this copyright header
- *     remains unmodified.  The code is free for personal use and requires
- *     permission to use in a commercial product.
- *
- *      THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
- *      OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
- *      MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
- *      I SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR
- *      CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
- *
- *     You can reach the author of this software at :
- *          p r e e t . w i k i @ g m a i l . c o m
- */
-
-/**
- * @file
- * @brief Contains FreeRTOS Tasks
- */
+/*****************************************************************************
+$Work file     : tasks.cpp $
+Description    : This file contains the Initialization of display and sensor tasks.
+Project(s)     : Smart Health Gear
+Compiler       : Cross ARM GCC
+OS			   : RTOS
+Original Author: $ Preetpal Kang
+$Author        : $ Aniket Dali
+$Date          : $ 26 May 2017
+$Revision      : 1.0 $
+*****************************************************************************/
 #ifndef TASKS_HPP_
 #define TASKS_HPP_
 
+/****************************************************************************/
+/*                       INCLUDE FILES                                      */
+/****************************************************************************/
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -54,6 +46,34 @@
 #define	SS(fs)	((fs)->ssize)
 using namespace std;
 
+/****************************************************************************/
+/*                        VARIABLES AND MACROS                              */
+/****************************************************************************/
+static LPC_TIM_TypeDef * one_ms_timer_ptr = NULL;
+static SemaphoreHandle_t triggerHundredMilliSec	   = NULL;
+void caliberate(void);
+#define  one_ms_timer    (2)
+#define  SET			 (1)
+#define  HUNDRED_MILLI	 (100)
+#define  TENMILLI	     (1)
+typedef enum {
+	invalid,
+	forw,
+	back
+} forBack_Count;
+static uint32_t step_Count =0;
+extern  uint32_t check;
+
+/****************************************************************************/
+/*                       FUNCTION DECLARATAIONS                             */
+/****************************************************************************/
+// Timer to re- calibrate the accelerometer
+void Timer2_init(void);
+
+
+/****************************************************************************/
+/*                       Class declarations                                 */
+/****************************************************************************/
 /**
  * Terminal task is our UART0 terminal that handles our commands into the board.
  * This also saves and restores the "disk" tele-metry.  Disk tele-metry variables
@@ -441,35 +461,6 @@ class UART2_task : public scheduler_task
         GPIO_CUSTOM gpio_pin;
 
 };
-
-// IDs used for getSharedObject() and addSharedObject(), to share the same queue between both the task
-typedef enum {
-   shared_OrientQueueId,
-} sharedHandleId_t;
-
-static LPC_TIM_TypeDef * one_ms_timer_ptr = NULL;
-static SemaphoreHandle_t triggerTenMicroSec = NULL;
-static SemaphoreHandle_t triggerHundredMilliSec	   = NULL;
-void caliberate(void);
-#define  one_ms_timer    (2)
-#define  SET			 (1)
-#define  HUNDRED_MILLI	 (100)
-#define  TENMILLI	     (1)
-void Update_timers_acceleration();
-
-
-typedef enum {
-	invalid,
-	forw,
-	back
-} forBack_Count;
-static uint32_t step_Count =0;
-extern  uint32_t check;
-// Timer to re- calibrate the accelerometer
-void Timer2_init(void);
-
-
-
 // Orientation Computation Task
  class orient_compute : public scheduler_task
  {
@@ -524,3 +515,7 @@ class heartRate : public scheduler_task
 
 
 #endif /* TASKS_HPP_ */
+/*===================================================================
+// $Log: $1.0 AVD:Added comments to increase the readability
+//
+//--------------------------------------------------------------------*/
