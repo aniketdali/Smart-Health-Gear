@@ -29,7 +29,7 @@ Compiler       : Cross ARM GCC
 OS			   : RTOS
 Original Author: $ Preetpal Kang
 $Author        : $ Aniket Dali
-$Date          : $ 26 May 2017
+$Date          : $ 26 May 2017$
 $Revision      : 1.0 $
 *****************************************************************************/
 /****************************************************************************/
